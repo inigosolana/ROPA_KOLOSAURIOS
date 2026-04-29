@@ -81,6 +81,53 @@
         </button>
       </section>
 
+      <!-- Resumen de Precios -->
+      <div id="price-summary-container" class="price-summary-card card hidden">
+        <h3 style="margin-bottom:16px">Resumen de Precios</h3>
+        <div id="price-details" class="price-details">
+          <!-- Se rellena dinámicamente -->
+        </div>
+        <div class="price-total-row">
+          <span class="total-label">TOTAL ESTIMADO</span>
+          <span id="total-value" class="total-value">0.00€</span>
+        </div>
+        <div id="pack-discount-msg" class="pack-discount-msg hidden">
+          <span class="discount-badge">¡Descuento de Pack aplicado!</span>
+        </div>
+
+        <!-- Método de Pago -->
+        <div class="payment-method-section">
+          <label style="display:block; margin-bottom:12px; font-weight:700; color:var(--text-2)">MÉTODO DE PAGO</label>
+          <div class="payment-options">
+            <label class="payment-option">
+              <input type="radio" name="payment-method" value="stripe" checked>
+              <div class="payment-box">
+                <span class="payment-icon">💳</span>
+                <span class="payment-label">Tarjeta (Stripe)</span>
+              </div>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="payment-method" value="transferencia">
+              <div class="payment-box">
+                <span class="payment-icon">🏦</span>
+                <span class="payment-label">Transferencia</span>
+              </div>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="payment-method" value="paypal">
+              <div class="payment-box">
+                <span class="payment-icon">🅿️</span>
+                <span class="payment-label">PayPal</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="deadline-notice">
+          ⚠️ Plazo máximo de pedido: <strong>30 de Abril 2026</strong>
+        </div>
+      </div>
+
       <!-- Acción principal -->
       <div class="submit-zone">
         <button id="btn-submit" class="btn-primary btn-submit" onclick="submitOrder()">
@@ -125,12 +172,15 @@
           <span class="search-icon">🔍</span>
           <input id="filter-input" type="text" placeholder="Filtrar por jugador, artículo, color…" oninput="renderTable()" />
         </div>
-        <div class="toolbar-actions">
-          <button class="btn-export btn-csv"   onclick="exportCSV()">
-            <span>⬇</span> Exportar CSV
+        <div class="admin-actions">
+          <button class="btn btn-primary" onclick="exportToExcel()">
+            <span class="btn-icon">📊</span> Exportar Pedidos (Excel)
           </button>
-          <button class="btn-export btn-excel" onclick="exportExcel()">
-            <span>📄</span> Exportar Excel
+          <button class="btn btn-secondary" onclick="exportAggregated()">
+            <span class="btn-icon">🏗️</span> Resumen Producción (Chub/Paseo)
+          </button>
+          <button class="btn btn-secondary" onclick="exportToCSV()">
+            <span class="btn-icon">📄</span> Exportar CSV
           </button>
         </div>
       </div>

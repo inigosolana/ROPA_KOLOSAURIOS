@@ -3,14 +3,19 @@
    ============================================= */
 
 // ── Catálogo de opciones ──────────────────────
-const ARTICULOS = [
-  'Camiseta (chico)',
-  'Camiseta (chica)',
-  'Pantalón (chico)',
-  'Pantalón (chica)',
-  'Sudadera',
-  'Camiseta paseo',
-];
+// ── Catálogo de opciones y precios ───────────
+const ARTICULOS = {
+  'CHUBASQUERO': 15.48,
+  'PANTALON PASEO': 14.48,
+  'MOCHILA': 24.13,
+  'SUDADERA': 33.78,
+  'CAMISETA PASEO': 24.13,
+  'CAMISETA JUEGO': 24.13,
+  'PANTALON JUEGO': 23.16,
+  'GORRA': 4.83
+};
+
+const ARTICULO_NAMES = Object.keys(ARTICULOS);
 
 const COLORES = ['Azul', 'Amarilla', 'Naranja', 'Rosa', 'Negro'];
 const TALLAS  = ['S', 'M', 'L', 'XL', '2XL'];
@@ -66,10 +71,24 @@ function updateBadge() {
 }
 
 // ── Formulario: prendas ───────────────────────
-let formItems = [];   // [{id, articulo, color, talla, nombre, dorsal}]
+let formItems = [];   // [{id, articulo, color, genero, talla, nombre, dorsal}]
+
+function needsColor(articulo) {
+  if (!articulo) return false;
+  return articulo.includes('CAMISETA') || articulo.includes('PANTALON');
+}
+
+function needsGender(articulo) {
+  if (!articulo) return false;
+  // Chubasquero es unisex, Mochila/Gorra no suelen llevar género
+  return articulo.includes('CAMISETA') || articulo.includes('PANTALON') || articulo === 'SUDADERA';
+}
 
 function createItemHTML(item) {
   const idx = formItems.indexOf(item) + 1;
+  const hasColor = needsColor(item.articulo);
+  const hasGender = needsGender(item.articulo);
+  
   return `
     <div class="item-card" id="item-${item.id}">
       <div class="item-card-header">
@@ -81,12 +100,12 @@ function createItemHTML(item) {
       <div class="form-row cols-2" style="margin-bottom:14px">
         <div class="form-group">
           <label for="art-${item.id}">Artículo *</label>
-          <select id="art-${item.id}">
+          <select id="art-${item.id}" onchange="onArticleChange('${item.id}', this.value)">
             <option value="">— Elige artículo —</option>
-            ${ARTICULOS.map(a => `<option value="${a}"${item.articulo === a ? ' selected' : ''}>${a}</option>`).join('')}
+            ${ARTICULO_NAMES.map(a => `<option value="${a}"${item.articulo === a ? ' selected' : ''}>${a}</option>`).join('')}
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group ${hasColor ? '' : 'hidden'}" id="group-color-${item.id}">
           <label for="col-${item.id}">Color *</label>
           <select id="col-${item.id}">
             <option value="">— Elige color —</option>
@@ -95,16 +114,25 @@ function createItemHTML(item) {
         </div>
       </div>
 
-      <div class="size-group" style="margin-bottom:14px">
-        <label>Talla *</label>
-        <div class="size-pills" id="pills-${item.id}">
-          ${TALLAS.map(t => `
-            <button
-              type="button"
-              class="size-pill${item.talla === t ? ' selected' : ''}"
-              onclick="selectTalla('${item.id}', '${t}', this)"
-            >${t}</button>
-          `).join('')}
+      <div class="form-row cols-2" style="margin-bottom:14px">
+        <div class="form-group ${hasGender ? '' : 'hidden'}" id="group-gender-${item.id}">
+          <label>Corte / Género *</label>
+          <div class="gender-pills">
+            <button type="button" class="gender-pill ${item.genero === 'CHICO' ? 'selected' : ''}" onclick="selectGender('${item.id}', 'CHICO', this)">CHICO</button>
+            <button type="button" class="gender-pill ${item.genero === 'CHICA' ? 'selected' : ''}" onclick="selectGender('${item.id}', 'CHICA', this)">CHICA</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Talla *</label>
+          <div class="size-pills" id="pills-${item.id}">
+            ${TALLAS.map(t => `
+              <button
+                type="button"
+                class="size-pill${item.talla === t ? ' selected' : ''}"
+                onclick="selectTalla('${item.id}', '${t}', this)"
+              >${t}</button>
+            `).join('')}
+          </div>
         </div>
       </div>
 
@@ -127,22 +155,34 @@ function renderFormItems() {
   container.innerHTML = formItems.map(createItemHTML).join('');
   document.getElementById('item-counter').textContent =
     formItems.length === 1 ? '1 prenda' : `${formItems.length} prendas`;
+  updatePriceDisplay();
+  setupFormListeners();
 }
 
-function addItem() {
-  const newItem = { id: genId(), articulo: '', color: '', talla: '', nombre: '', dorsal: '' };
-  formItems.push(newItem);
-  renderFormItems();
-  // Scroll al nuevo item
-  setTimeout(() => {
-    const el = document.getElementById(`item-${newItem.id}`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 50);
+function onArticleChange(itemId, articulo) {
+  const item = formItems.find(i => i.id === itemId);
+  if (item) item.articulo = articulo;
+  
+  // Mostrar/Ocultar campos condicionales
+  const colorGroup = document.getElementById(`group-color-${itemId}`);
+  const genderGroup = document.getElementById(`group-gender-${itemId}`);
+  
+  if (needsColor(articulo)) colorGroup.classList.remove('hidden');
+  else colorGroup.classList.add('hidden');
+  
+  if (needsGender(articulo)) genderGroup.classList.remove('hidden');
+  else genderGroup.classList.add('hidden');
+  
+  updatePriceDisplay();
 }
 
-function removeItem(id) {
-  formItems = formItems.filter(i => i.id !== id);
-  renderFormItems();
+function selectGender(itemId, genero, btn) {
+  const container = btn.parentElement;
+  container.querySelectorAll('.gender-pill').forEach(p => p.classList.remove('selected'));
+  btn.classList.add('selected');
+  const item = formItems.find(i => i.id === itemId);
+  if (item) item.genero = genero;
+  updatePriceDisplay();
 }
 
 function selectTalla(itemId, talla, btn) {
@@ -151,6 +191,7 @@ function selectTalla(itemId, talla, btn) {
   btn.classList.add('selected');
   const item = formItems.find(i => i.id === itemId);
   if (item) item.talla = talla;
+  updatePriceDisplay();
 }
 
 // Leer valores actuales del DOM para cada item
@@ -161,7 +202,137 @@ function readFormItems() {
     const nombre   = document.getElementById(`nom-${item.id}`)?.value.trim() || '';
     const dorsal   = document.getElementById(`dor-${item.id}`)?.value.trim() || '';
     const talla    = item.talla || '';
-    return { ...item, articulo, color, nombre, dorsal, talla };
+    const genero   = item.genero || '';
+    return { ...item, articulo, color, nombre, dorsal, talla, genero };
+  });
+}
+
+// ── Lógica de Packs y Precios ─────────────────
+function calculateOrderTotal(items) {
+  let total = 0;
+  const counts = {
+    'CAMISETA JUEGO': 0,
+    'PANTALON JUEGO': 0,
+    'SUDADERA': 0,
+    'GORRA': 0
+  };
+
+  // Otros artículos se cobran individualmente de entrada
+  items.forEach(it => {
+    if (counts.hasOwnProperty(it.articulo)) {
+      counts[it.articulo]++;
+    } else if (it.articulo) {
+      total += ARTICULOS[it.articulo] || 0;
+    }
+  });
+
+  let appliedPacks = [];
+
+  // 1. Pack 4 Camisetas + 2 Pantalones + 1 Sudadera (118.69€)
+  while (counts['CAMISETA JUEGO'] >= 4 && counts['PANTALON JUEGO'] >= 2 && counts['SUDADERA'] >= 1) {
+    total += 118.69;
+    counts['CAMISETA JUEGO'] -= 4;
+    counts['PANTALON JUEGO'] -= 2;
+    counts['SUDADERA'] -= 1;
+    appliedPacks.push("Pack 4 Camisetas + 2 Pantalones + 1 Sudadera");
+  }
+
+  // 2. Pack 4 Camisetas + 2 Pantalones (88.78€)
+  while (counts['CAMISETA JUEGO'] >= 4 && counts['PANTALON JUEGO'] >= 2) {
+    total += 88.78;
+    counts['CAMISETA JUEGO'] -= 4;
+    counts['PANTALON JUEGO'] -= 2;
+    appliedPacks.push("Pack 4 Camisetas + 2 Pantalones");
+  }
+
+  // 3. Pack 2 Camisetas + 1 Pantalón + 1 Sudadera (84.91€)
+  while (counts['CAMISETA JUEGO'] >= 2 && counts['PANTALON JUEGO'] >= 1 && counts['SUDADERA'] >= 1) {
+    total += 84.91;
+    counts['CAMISETA JUEGO'] -= 2;
+    counts['PANTALON JUEGO'] -= 1;
+    counts['SUDADERA'] -= 1;
+    appliedPacks.push("Pack Equipaje + Sudadera");
+  }
+
+  // 4. Pack 3 Camisetas + 1 Pantalón (65.62€)
+  while (counts['CAMISETA JUEGO'] >= 3 && counts['PANTALON JUEGO'] >= 1) {
+    total += 65.62;
+    counts['CAMISETA JUEGO'] -= 3;
+    counts['PANTALON JUEGO'] -= 1;
+    appliedPacks.push("Pack 3 Camisetas + 1 Pantalón");
+  }
+
+  // 5. Pack 2 Camisetas + 1 Pantalón (55€ - Equipaje)
+  while (counts['CAMISETA JUEGO'] >= 2 && counts['PANTALON JUEGO'] >= 1) {
+    total += 55.00;
+    counts['CAMISETA JUEGO'] -= 2;
+    counts['PANTALON JUEGO'] -= 1;
+    appliedPacks.push("Equipaje (2 Cam. + 1 Pant.)");
+  }
+
+  // 6. Pack 2 Gorras (7.72€)
+  while (counts['GORRA'] >= 2) {
+    total += 7.72;
+    counts['GORRA'] -= 2;
+    appliedPacks.push("Pack 2 Gorras");
+  }
+
+  // Resto de artículos sueltos que quedaron
+  for (const art in counts) {
+    total += counts[art] * ARTICULOS[art];
+  }
+
+  return { total, appliedPacks };
+}
+
+function updatePriceDisplay() {
+  const items = readFormItems();
+  const validItems = items.filter(it => it.articulo);
+  
+  const detailsContainer = document.getElementById('price-details');
+  const totalPriceEl = document.getElementById('total-price');
+  const packMsgEl = document.getElementById('pack-discount-msg');
+
+  if (validItems.length === 0) {
+    detailsContainer.innerHTML = '<p class="empty-price-msg">Añade prendas para ver el total</p>';
+    totalPriceEl.textContent = '0.00€';
+    packMsgEl.classList.add('hidden');
+    return;
+  }
+
+  const { total, appliedPacks } = calculateOrderTotal(validItems);
+  
+  // Render details
+  let html = '<ul class="price-list">';
+  
+  // List valid items
+  validItems.forEach(it => {
+    html += `<li><span>${it.articulo}</span> <span>${ARTICULOS[it.articulo].toFixed(2)}€</span></li>`;
+  });
+  
+  html += '</ul>';
+  
+  detailsContainer.innerHTML = html;
+  totalPriceEl.textContent = `${total.toFixed(2)}€`;
+
+  if (appliedPacks.length > 0) {
+    packMsgEl.classList.remove('hidden');
+    // Optional: show which packs were applied
+    // detailsContainer.innerHTML += `<p class="packs-summary">Packs detectados: ${appliedPacks.join(', ')}</p>`;
+  } else {
+    packMsgEl.classList.add('hidden');
+  }
+}
+
+function setupFormListeners() {
+  const form = document.getElementById('view-form');
+  // Escuchar cambios en cualquier input/select para actualizar el precio
+  form.querySelectorAll('select, input').forEach(el => {
+    if (!el._hasListener) {
+      el.addEventListener('change', updatePriceDisplay);
+      el.addEventListener('input', updatePriceDisplay);
+      el._hasListener = true;
+    }
   });
 }
 
@@ -187,19 +358,24 @@ function submitOrder() {
     const it = items[i];
     const num = i + 1;
     if (!it.articulo) { showToast(`⚠️ Prenda #${num}: elige artículo`, 'error'); return; }
-    if (!it.color)    { showToast(`⚠️ Prenda #${num}: elige color`, 'error');    return; }
+    if (needsColor(it.articulo) && !it.color)    { showToast(`⚠️ Prenda #${num}: elige color`, 'error');    return; }
+    if (needsGender(it.articulo) && !it.genero)   { showToast(`⚠️ Prenda #${num}: elige corte (chico/chica)`, 'error'); return; }
     if (!it.talla)    { showToast(`⚠️ Prenda #${num}: elige talla`, 'error');    return; }
   }
+
+  const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'stripe';
 
   const order = {
     id: genId(),
     player: playerName,
     date: new Date().toLocaleString('es-ES'),
+    payment: paymentMethod.toUpperCase(),
     items: items.map(it => ({
       id:       it.id,
       articulo: it.articulo,
       color:    it.color,
       talla:    it.talla,
+      genero:   it.genero,
       nombre:   it.nombre,
       dorsal:   it.dorsal,
     })),
@@ -208,12 +384,21 @@ function submitOrder() {
   orders.push(order);
   saveState();
 
+  // Mensaje final personalizado por pago
+  let msg = '✅ Pedido enviado correctamente';
+  if (paymentMethod === 'transferencia') {
+    msg = '✅ Pedido registrado. Por favor, realiza la transferencia al ES12 3456...';
+  } else if (paymentMethod === 'stripe' || paymentMethod === 'paypal') {
+    msg = `✅ Pedido registrado. Redirigiendo a pasarela de pago (${paymentMethod})...`;
+  }
+
+  showToast(msg, 'success');
+
   // Reset form
   document.getElementById('player-name').value = '';
   formItems = [];
   renderFormItems();
 
-  showToast(`✅ Pedido de ${playerName} guardado (${order.items.length} prenda${order.items.length > 1 ? 's' : ''})`, 'success');
   updateBadge();
 
   setTimeout(() => showView('dashboard'), 800);
@@ -268,8 +453,15 @@ function renderTable() {
   tbody.innerHTML = filtered.map(r => `
     <tr>
       <td class="td-player">${escHtml(r.player)}</td>
-      <td class="td-article">${escHtml(r.articulo)}</td>
-      <td><span class="tag tag-color">${escHtml(r.color)}</span></td>
+      <td class="td-article">
+        <div style="font-weight:600">${escHtml(r.articulo)}</div>
+        <div style="font-size:0.75rem; color:var(--text-3)">${escHtml(r.genero)}</div>
+      </td>
+      <td>
+        ${needsColor(r.articulo) 
+          ? `<span class="tag tag-color">${escHtml(r.color)}</span>` 
+          : '<span style="color:var(--text-3)">—</span>'}
+      </td>
       <td><span class="tag tag-size">${escHtml(r.talla)}</span></td>
       <td>${escHtml(r.nombre) || '<span style="color:var(--text-3)">—</span>'}</td>
       <td>
@@ -343,7 +535,6 @@ function buildExportRows() {
         talla:    item.talla,
         nombre:   item.nombre,
         dorsal:   item.dorsal,
-        total:    1,
       });
     });
   });
@@ -357,7 +548,7 @@ function exportCSV() {
     return;
   }
 
-  const headers = ['articulo', 'color', 'talla', 'nombre', 'dorsal', 'total'];
+  const headers = ['articulo', 'color', 'talla', 'nombre', 'dorsal'];
 
   // Escape CSV cell (handles commas/quotes/newlines)
   const escCell = v => {
@@ -386,7 +577,7 @@ function exportExcel() {
 
   // SheetJS
   const ws = XLSX.utils.json_to_sheet(rows, {
-    header: ['articulo', 'color', 'talla', 'nombre', 'dorsal', 'total'],
+    header: ['articulo', 'color', 'talla', 'nombre', 'dorsal'],
   });
 
   // Ancho de columnas
@@ -396,7 +587,6 @@ function exportExcel() {
     { wch: 8  }, // talla
     { wch: 18 }, // nombre
     { wch: 8  }, // dorsal
-    { wch: 8  }, // total
   ];
 
   const wb = XLSX.utils.book_new();
@@ -419,6 +609,65 @@ function triggerDownload(blob, filename) {
     URL.revokeObjectURL(url);
     a.remove();
   }, 200);
+}
+
+function addItem() {
+  const newItem = { id: genId(), articulo: '', color: '', genero: '', talla: '', nombre: '', dorsal: '' };
+  formItems.push(newItem);
+  renderFormItems();
+  // Scroll al nuevo item
+  setTimeout(() => {
+    const el = document.getElementById(`item-${newItem.id}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 50);
+}
+
+function removeItem(id) {
+  formItems = formItems.filter(i => i.id !== id);
+  renderFormItems();
+}
+
+/**
+ * Agregación para Chubasqueros y Pantalones de Paseo
+ */
+function buildAggregatedRows() {
+  const aggregated = {}; // key: "articulo|genero|talla" -> count
+
+  orders.forEach(order => {
+    order.items.forEach(item => {
+      if (item.articulo === 'CHUBASQUERO' || item.articulo === 'PANTALON PASEO') {
+        const gen = item.articulo === 'CHUBASQUERO' ? 'UNISEX' : (item.genero || '—');
+        const key = `${item.articulo}|${gen}|${item.talla}`;
+        aggregated[key] = (aggregated[key] || 0) + 1;
+      }
+    });
+  });
+
+  return Object.keys(aggregated).map(key => {
+    const [articulo, genero, talla] = key.split('|');
+    return { articulo, genero, talla, cantidad: aggregated[key] };
+  });
+}
+
+function exportAggregated() {
+  const rows = buildAggregatedRows();
+  if (rows.length === 0) {
+    showToast('⚠️ No hay chubasqueros o pantalones de paseo para exportar', 'error');
+    return;
+  }
+
+  // SheetJS
+  const ws = XLSX.utils.json_to_sheet(rows, {
+    header: ['articulo', 'genero', 'talla', 'cantidad'],
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Resumen_Produccion');
+
+  const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  triggerDownload(blob, 'produccion_chubasqueros_paseo.xlsx');
+  showToast('✅ Excel de producción exportado correctamente', 'success');
 }
 
 // ── Init ──────────────────────────────────────
