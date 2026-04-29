@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Equipación del Equipo · Gestor de Pedidos</title>
+  <meta name="description" content="Gestiona la compra de equipación y ropa deportiva de tu equipo. Selecciona prendas, tallas, colores, nombre y dorsal." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- SheetJS for Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── HEADER ── -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="brand-icon">⚽</div>
+        <div>
+          <h1 class="brand-title">Gestor de Equipación</h1>
+          <p class="brand-sub">Pedidos de ropa deportiva del equipo</p>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <button id="btn-nav-form"   class="nav-btn active" onclick="showView('form')">
+          <span class="nav-icon">🛒</span>
+          <span class="nav-label">Nuevo Pedido</span>
+        </button>
+        <button id="btn-nav-dash"   class="nav-btn"        onclick="showView('dashboard')">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Resumen</span>
+          <span id="badge-count" class="badge hidden">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════
+       VIEW 1 · FORMULARIO DE PEDIDO
+       ══════════════════════════════ -->
+  <main id="view-form" class="view active">
+    <div class="container">
+
+      <div class="page-hero">
+        <h2 class="hero-title">Realiza tu pedido</h2>
+        <p class="hero-sub">Selecciona las prendas que quieres, añade tus datos y envía el pedido. Puedes añadir tantas prendas como necesites.</p>
+      </div>
+
+      <!-- Identificación del jugador -->
+      <section class="card player-card">
+        <div class="card-header">
+          <span class="section-icon">👤</span>
+          <h3 class="section-title">Datos del jugador</h3>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="player-name">Nombre del jugador *</label>
+            <input id="player-name" type="text" placeholder="Ej: Carlos García" autocomplete="name" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Lista de prendas -->
+      <section class="card">
+        <div class="card-header">
+          <span class="section-icon">👕</span>
+          <h3 class="section-title">Prendas seleccionadas</h3>
+          <span class="item-counter" id="item-counter">0 prendas</span>
+        </div>
+
+        <div id="items-container">
+          <!-- las prendas se insertan aquí dinámicamente -->
+        </div>
+
+        <button id="btn-add-item" class="btn-add" onclick="addItem()">
+          <span class="btn-add-icon">+</span>
+          Añadir prenda
+        </button>
+      </section>
+
+      <!-- Acción principal -->
+      <div class="submit-zone">
+        <button id="btn-submit" class="btn-primary btn-submit" onclick="submitOrder()">
+          <span>Enviar pedido</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════
+       VIEW 2 · DASHBOARD / RESUMEN
+       ══════════════════════════════ -->
+  <main id="view-dashboard" class="view">
+    <div class="container">
+
+      <div class="page-hero">
+        <h2 class="hero-title">Resumen de pedidos</h2>
+        <p class="hero-sub">Panel de administración con todos los pedidos recibidos.</p>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card">
+          <p class="kpi-label">Total prendas</p>
+          <p class="kpi-value" id="kpi-total">0</p>
+        </div>
+        <div class="kpi-card">
+          <p class="kpi-label">Jugadores</p>
+          <p class="kpi-value" id="kpi-players">0</p>
+        </div>
+        <div class="kpi-card">
+          <p class="kpi-label">Pedidos</p>
+          <p class="kpi-value" id="kpi-orders">0</p>
+        </div>
+      </div>
+
+      <!-- Filtro + exportar -->
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input id="filter-input" type="text" placeholder="Filtrar por jugador, artículo, color…" oninput="renderTable()" />
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn-export btn-csv"   onclick="exportCSV()">
+            <span>⬇</span> Exportar CSV
+          </button>
+          <button class="btn-export btn-excel" onclick="exportExcel()">
+            <span>📄</span> Exportar Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="table-wrap card">
+        <table id="orders-table">
+          <thead>
+            <tr>
+              <th>Jugador</th>
+              <th>Artículo</th>
+              <th>Color</th>
+              <th>Talla</th>
+              <th>Nombre</th>
+              <th>Dorsal</th>
+              <th class="col-delete"></th>
+            </tr>
+          </thead>
+          <tbody id="orders-tbody">
+            <tr id="empty-row">
+              <td colspan="7" class="empty-cell">
+                <div class="empty-state">
+                  <div class="empty-icon">📭</div>
+                  <p>Aún no hay pedidos registrados.</p>
+                  <button class="btn-ghost" onclick="showView('form')">Realizar primer pedido</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── TOAST ── -->
+  <div id="toast" class="toast" role="alert"></div>
+
+  <!-- ── CONFIRM MODAL ── -->
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <p id="modal-text"></p>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="btn-danger" id="modal-confirm">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
