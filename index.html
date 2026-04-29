@@ -3,13 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Equipación del Equipo · Gestor de Pedidos</title>
-  <meta name="description" content="Gestiona la compra de equipación y ropa deportiva de tu equipo. Selecciona prendas, tallas, colores, nombre y dorsal." />
+  <title>Tienda de Equipación · Ropa Equipo</title>
+  <meta name="description" content="Gestiona la compra de equipación y ropa deportiva de tu equipo." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <!-- SheetJS for Excel export -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -25,15 +23,10 @@
         </div>
       </div>
       <nav class="header-nav">
-        <button id="btn-nav-form"   class="nav-btn active" onclick="showView('form')">
-          <span class="nav-icon">🛒</span>
-          <span class="nav-label">Nuevo Pedido</span>
-        </button>
-        <button id="btn-nav-dash"   class="nav-btn"        onclick="showView('dashboard')">
-          <span class="nav-icon">📊</span>
-          <span class="nav-label">Resumen</span>
-          <span id="badge-count" class="badge hidden">0</span>
-        </button>
+        <div class="nav-status">
+          <span class="status-dot"></span>
+          Tienda Abierta
+        </div>
       </nav>
     </div>
   </header>
@@ -139,81 +132,6 @@
     </div>
   </main>
 
-  <!-- ══════════════════════════════
-       VIEW 2 · DASHBOARD / RESUMEN
-       ══════════════════════════════ -->
-  <main id="view-dashboard" class="view">
-    <div class="container">
-
-      <div class="page-hero">
-        <h2 class="hero-title">Resumen de pedidos</h2>
-        <p class="hero-sub">Panel de administración con todos los pedidos recibidos.</p>
-      </div>
-
-      <!-- KPIs -->
-      <div class="kpi-grid" id="kpi-grid">
-        <div class="kpi-card">
-          <p class="kpi-label">Total prendas</p>
-          <p class="kpi-value" id="kpi-total">0</p>
-        </div>
-        <div class="kpi-card">
-          <p class="kpi-label">Jugadores</p>
-          <p class="kpi-value" id="kpi-players">0</p>
-        </div>
-        <div class="kpi-card">
-          <p class="kpi-label">Pedidos</p>
-          <p class="kpi-value" id="kpi-orders">0</p>
-        </div>
-      </div>
-
-      <!-- Filtro + exportar -->
-      <div class="toolbar">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input id="filter-input" type="text" placeholder="Filtrar por jugador, artículo, color…" oninput="renderTable()" />
-        </div>
-        <div class="admin-actions">
-          <button class="btn btn-primary" onclick="exportToExcel()">
-            <span class="btn-icon">📊</span> Exportar Pedidos (Excel)
-          </button>
-          <button class="btn btn-secondary" onclick="exportAggregated()">
-            <span class="btn-icon">🏗️</span> Resumen Producción (Chub/Paseo)
-          </button>
-          <button class="btn btn-secondary" onclick="exportToCSV()">
-            <span class="btn-icon">📄</span> Exportar CSV
-          </button>
-        </div>
-      </div>
-
-      <!-- Tabla -->
-      <div class="table-wrap card">
-        <table id="orders-table">
-          <thead>
-            <tr>
-              <th>Jugador</th>
-              <th>Artículo</th>
-              <th>Color</th>
-              <th>Talla</th>
-              <th>Nombre</th>
-              <th>Dorsal</th>
-              <th class="col-delete"></th>
-            </tr>
-          </thead>
-          <tbody id="orders-tbody">
-            <tr id="empty-row">
-              <td colspan="7" class="empty-cell">
-                <div class="empty-state">
-                  <div class="empty-icon">📭</div>
-                  <p>Aún no hay pedidos registrados.</p>
-                  <button class="btn-ghost" onclick="showView('form')">Realizar primer pedido</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
   </main>
 
   <!-- ── TOAST ── -->
@@ -229,6 +147,16 @@
       </div>
     </div>
   </div>
+
+  <!-- ── FOOTER ── -->
+  <footer class="app-footer">
+    <div class="container">
+      <p>&copy; 2026 Gestor de Equipación. Todos los derechos reservados.</p>
+      <div class="footer-links">
+        <a href="admin.html" class="admin-link">Acceso Administración</a>
+      </div>
+    </div>
+  </footer>
 
   <script src="app.js"></script>
 </body>

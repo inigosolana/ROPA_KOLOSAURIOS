@@ -290,15 +290,21 @@ function updatePriceDisplay() {
   const validItems = items.filter(it => it.articulo);
   
   const detailsContainer = document.getElementById('price-details');
-  const totalPriceEl = document.getElementById('total-price');
+  const totalPriceEl = document.getElementById('total-value');
   const packMsgEl = document.getElementById('pack-discount-msg');
+  const summaryCard = document.getElementById('price-summary-container');
+
+  if (!detailsContainer || !totalPriceEl) return; // No estamos en la tienda
 
   if (validItems.length === 0) {
+    summaryCard?.classList.add('hidden');
     detailsContainer.innerHTML = '<p class="empty-price-msg">Añade prendas para ver el total</p>';
     totalPriceEl.textContent = '0.00€';
-    packMsgEl.classList.add('hidden');
+    packMsgEl?.classList.add('hidden');
     return;
   }
+
+  summaryCard?.classList.remove('hidden');
 
   const { total, appliedPacks } = calculateOrderTotal(validItems);
   
@@ -415,42 +421,38 @@ function updateKPIs() {
 }
 
 function renderTable() {
-  const filter = (document.getElementById('filter-input')?.value || '').toLowerCase();
-  const tbody  = document.getElementById('orders-tbody');
+  const tbody = document.getElementById('orders-tbody');
+  if (!tbody) return;
 
-  // Flatten: una fila por prenda
+  const filter = (document.getElementById('filter-input')?.value || '').toLowerCase();
+  
+  // Aplanamos pedidos a items individuales para la tabla
   const rows = [];
-  orders.forEach(order => {
-    order.items.forEach(item => {
-      rows.push({ orderId: order.id, itemId: item.id, player: order.player, ...item });
+  orders.forEach(o => {
+    o.items.forEach(it => {
+      // Búsqueda simple
+      const searchStr = `${o.player} ${it.articulo} ${it.color} ${it.talla} ${o.payment}`.toLowerCase();
+      if (searchStr.includes(filter)) {
+        rows.push({ ...it, player: o.player, orderId: o.id, itemId: it.id, payment: o.payment });
+      }
     });
   });
 
-  const filtered = filter
-    ? rows.filter(r =>
-        r.player.toLowerCase().includes(filter)   ||
-        r.articulo.toLowerCase().includes(filter) ||
-        r.color.toLowerCase().includes(filter)    ||
-        r.nombre.toLowerCase().includes(filter)   ||
-        String(r.dorsal).includes(filter)
-      )
-    : rows;
-
-  if (filtered.length === 0) {
+  if (rows.length === 0) {
     tbody.innerHTML = `
-      <tr id="empty-row">
-        <td colspan="7" class="empty-cell">
+      <tr>
+        <td colspan="8" class="empty-cell">
           <div class="empty-state">
-            <div class="empty-icon">${filter ? '🔎' : '📭'}</div>
-            <p>${filter ? 'Sin resultados para "' + filter + '"' : 'Aún no hay pedidos registrados.'}</p>
-            ${!filter ? `<button class="btn-ghost" onclick="showView('form')">Realizar primer pedido</button>` : ''}
+            <div class="empty-icon">🔎</div>
+            <p>${filter ? 'No se encontraron resultados' : 'Aún no hay pedidos registrados'}</p>
           </div>
         </td>
-      </tr>`;
+      </tr>
+    `;
     return;
   }
 
-  tbody.innerHTML = filtered.map(r => `
+  tbody.innerHTML = rows.map(r => `
     <tr>
       <td class="td-player">${escHtml(r.player)}</td>
       <td class="td-article">
@@ -463,6 +465,11 @@ function renderTable() {
           : '<span style="color:var(--text-3)">—</span>'}
       </td>
       <td><span class="tag tag-size">${escHtml(r.talla)}</span></td>
+      <td>
+        <span class="tag tag-payment payment-${(r.payment || '').toLowerCase()}">
+          ${escHtml(r.payment)}
+        </span>
+      </td>
       <td>${escHtml(r.nombre) || '<span style="color:var(--text-3)">—</span>'}</td>
       <td>
         ${r.dorsal
@@ -541,14 +548,14 @@ function buildExportRows() {
   return rows;
 }
 
-function exportCSV() {
+function exportToCSV() {
   const rows = buildExportRows();
   if (rows.length === 0) {
     showToast('⚠️ No hay pedidos para exportar', 'error');
     return;
   }
 
-  const headers = ['articulo', 'color', 'talla', 'nombre', 'dorsal'];
+  const headers = ['articulo', 'color', 'talla', 'nombre', 'dorsal', 'pago'];
 
   // Escape CSV cell (handles commas/quotes/newlines)
   const escCell = v => {
@@ -568,7 +575,7 @@ function exportCSV() {
   showToast('✅ CSV exportado correctamente', 'success');
 }
 
-function exportExcel() {
+function exportToExcel() {
   const rows = buildExportRows();
   if (rows.length === 0) {
     showToast('⚠️ No hay pedidos para exportar', 'error');
@@ -577,7 +584,7 @@ function exportExcel() {
 
   // SheetJS
   const ws = XLSX.utils.json_to_sheet(rows, {
-    header: ['articulo', 'color', 'talla', 'nombre', 'dorsal'],
+    header: ['articulo', 'color', 'talla', 'nombre', 'dorsal', 'pago'],
   });
 
   // Ancho de columnas
@@ -587,6 +594,7 @@ function exportExcel() {
     { wch: 8  }, // talla
     { wch: 18 }, // nombre
     { wch: 8  }, // dorsal
+    { wch: 15 }, // pago
   ];
 
   const wb = XLSX.utils.book_new();
@@ -672,7 +680,20 @@ function exportAggregated() {
 
 // ── Init ──────────────────────────────────────
 (function init() {
-  // Añadir la primera prenda vacía por defecto
-  addItem();
+  const isAdminPage = document.body.classList.contains('admin-page');
+  
+  if (!isAdminPage) {
+    // Si no hay items, añadir el primero
+    if (formItems.length === 0) {
+      addItem();
+    } else {
+      renderFormItems();
+    }
+    setupFormListeners();
+  } else {
+    renderTable();
+    updateKPIs();
+  }
+  
   updateBadge();
 })();
